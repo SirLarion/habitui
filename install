@@ -9,11 +9,11 @@ fi
 cd $SCRIPT_DIR
 pwd
 
-echo "Building hutctl..."
+echo "Building habitui..."
 if cargo build --release $args; then
   echo "Build complete!"
   echo "Installing..."
-  if sudo mv target/release/hutctl /usr/bin/. ; then
+  if sudo mv target/release/habitui /usr/bin/. ; then
     echo "Installation complete!"
   else
     echo "Installation failed!"

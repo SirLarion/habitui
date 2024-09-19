@@ -1,10 +1,10 @@
 [package]
-name = "hutctl"
+name = "habitui"
 authors = ["Miska Tammenpää <miska@tammenpaa.com>"]
 version = "0.1.0"
 edition = "2021"
 license = "GPLv3"
-description = "Tools for easily controlling home server functionality"
+description = "Habitica TUI with basic Habitica client functionality"
 publish = false
 
 [dependencies]
