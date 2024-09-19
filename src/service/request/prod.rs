@@ -3,7 +3,7 @@ use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 
 use crate::{
     error::AppError,
-    services::habitica::{
+    service::{
         types::{Task, TaskId},
         util::{get_env_vars, SingleRes},
     },

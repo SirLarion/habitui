@@ -5,11 +5,11 @@ use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::task::JoinSet;
 
-use crate::services::habitica::request::{
-    complete_task, edit_task, post_created_task, remove_task, reorder_task,
+use crate::service::{
+    request::{complete_task, edit_task, post_created_task, remove_task, reorder_task},
+    types::{Action, Task},
+    util::get_task_list,
 };
-use crate::services::habitica::types::{Action, Task};
-use crate::services::habitica::util::get_task_list;
 
 #[derive(PartialEq)]
 pub enum AppState {

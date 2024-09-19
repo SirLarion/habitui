@@ -12,7 +12,7 @@ use ratatui::{
     widgets::{Block, Padding, Paragraph, StatefulWidget, Widget},
 };
 
-use crate::services::habitica::{
+use crate::service::{
     tui::util::{Direction, Palette, MOD_KEY_TTL},
     types::{Action, SubTask, Task, TaskId},
 };

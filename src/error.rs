@@ -31,9 +31,6 @@ pub enum AppError {
     #[error(transparent)]
     ThreadError(#[from] tokio::task::JoinError),
 
-    #[error("incorrect rights for the requested operation")]
-    AclError(String),
-
     #[error("executing command failed: {0}")]
     CmdError(String),
 

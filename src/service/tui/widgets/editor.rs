@@ -14,7 +14,7 @@ use std::marker::PhantomData;
 use time::{Duration, OffsetDateTime};
 use tui_textarea::{CursorMove, TextArea};
 
-use crate::services::habitica::{
+use crate::service::{
     tui::util::{Palette, MOD_KEY_TTL},
     types::{Difficulty, SubTask, Task},
 };

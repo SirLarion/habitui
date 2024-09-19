@@ -5,7 +5,7 @@ use tokio::time::{sleep, Duration};
 
 use crate::{
     error::AppError,
-    services::habitica::{
+    service::{
         types::{Task, TaskId},
         util::{get_json_path, ArrayRes},
     },
@@ -89,7 +89,7 @@ pub async fn reorder_task(task_id: TaskId, index: usize) -> Result<(), AppError>
 }
 
 /// Mock version of the fetch_tasks function to avoid unnecessary API calls.
-/// Reads data from ~/.config/hutctl/habitica_tasks.json and will fail if such
+/// Reads data from ~/.config/habitui/habitica_tasks.json and will fail if such
 /// a file does not exist
 pub async fn fetch_tasks() -> Result<String, AppError> {
     let path = get_json_path()?;

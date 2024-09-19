@@ -7,13 +7,11 @@ use log::debug;
 use serde::{Deserialize, Serialize};
 use time::{format_description::well_known::Iso8601, OffsetDateTime};
 
-use super::request::reorder_task;
-use super::types::{Difficulty, Priority, SubTask, Task, TaskId};
-use crate::util::build_config_path;
-use crate::{
-    error::AppError,
-    services::habitica::request::{fetch_tasks, post_created_task},
+use super::{
+    request::{fetch_tasks, post_created_task, reorder_task},
+    types::{Difficulty, Priority, SubTask, Task, TaskId},
 };
+use crate::{error::AppError, util::build_config_path};
 
 pub const ISO8601: Iso8601 = Iso8601::DEFAULT;
 
