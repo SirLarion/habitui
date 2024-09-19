@@ -9,6 +9,9 @@ pub enum Operation {
         save_json: bool,
     },
 
+    /// List completed TODOs
+    History,
+
     /// Create a new TODO item
     Task {
         /// Optionally define TODO item with a descriptor. Format:

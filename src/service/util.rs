@@ -180,13 +180,13 @@ pub async fn create_task(descriptor: Option<String>) -> Result<(), AppError> {
 }
 
 pub async fn get_task_list() -> Result<Vec<Task>, AppError> {
-    let raw_tasks = fetch_tasks().await?;
+    let raw_tasks = fetch_tasks("todos").await?;
     let tasks = serde_json::from_str::<ArrayRes<Task>>(raw_tasks.as_str())?.data;
     Ok(tasks)
 }
 
 pub async fn list_tasks(save_json: bool) -> Result<(), AppError> {
-    let raw_tasks = fetch_tasks().await?;
+    let raw_tasks = fetch_tasks("todos").await?;
     let tasks = serde_json::from_str::<ArrayRes<Task>>(raw_tasks.as_str())?.data;
 
     for task in tasks {
@@ -198,6 +198,22 @@ pub async fn list_tasks(save_json: bool) -> Result<(), AppError> {
         file.write_all(raw_tasks.as_bytes())?;
         println!("\nSaved list to ~/.config/habitica_tasks.json");
     }
+
+    Ok(())
+}
+
+pub async fn get_completed_tasks() -> Result<(), AppError> {
+    let raw_tasks = fetch_tasks("completedTodos").await?;
+    let tasks = serde_json::from_str::<ArrayRes<Task>>(raw_tasks.as_str())?.data;
+
+    for task in tasks {
+        println!("{task}");
+    }
+
+    let dir = build_config_path()?;
+    let mut file = File::create(format!("{dir}/habitica_completed.json"))?;
+    file.write_all(raw_tasks.as_bytes())?;
+    println!("\nSaved list to ~/.config/habitica_completed.json");
 
     Ok(())
 }

@@ -23,6 +23,7 @@ pub fn run_operation(operation: Option<Operation>) -> Result<(), AppError> {
         Some(Operation::List { save_json }) => runtime.spawn(list_tasks(save_json)),
         Some(Operation::Task { descriptor }) => runtime.spawn(create_task(descriptor)),
         Some(Operation::Reorder) => runtime.spawn(priority_reorder_tasks()),
+        Some(Operation::History) => runtime.spawn(get_completed_tasks()),
         None => runtime.spawn(tui::run()),
     };
 

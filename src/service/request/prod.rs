@@ -102,13 +102,20 @@ pub async fn reorder_task(task_id: TaskId, index: usize) -> Result<(), AppError>
     Ok(())
 }
 
-/// Fetch all tasks of type: todo from Habitica API. For our purposes a "todo"
+/// Fetch all tasks of type <task_type> from Habitica API. For our purposes a "todo"
 /// task is the same as a task in general
-pub async fn fetch_tasks() -> Result<String, AppError> {
+pub async fn fetch_tasks(task_type: &str) -> Result<String, AppError> {
+    if !["todos", "completedTodos"].contains(&task_type) {
+        Err(AppError::ServiceError(format!(
+            "Undefined task type: {task_type}"
+        )))?;
+    }
     let client = req::Client::new();
     let headers = get_headers()?;
     let res = client
-        .get(format!("{HABITICA_API_ENDPOINT}/tasks/user?type=todos"))
+        .get(format!(
+            "{HABITICA_API_ENDPOINT}/tasks/user?type={task_type}"
+        ))
         .headers(headers)
         .send()
         .await?;

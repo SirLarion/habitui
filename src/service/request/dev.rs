@@ -91,7 +91,12 @@ pub async fn reorder_task(task_id: TaskId, index: usize) -> Result<(), AppError>
 /// Mock version of the fetch_tasks function to avoid unnecessary API calls.
 /// Reads data from ~/.config/habitui/habitica_tasks.json and will fail if such
 /// a file does not exist
-pub async fn fetch_tasks() -> Result<String, AppError> {
+pub async fn fetch_tasks(task_type: &str) -> Result<String, AppError> {
+    if !["todos", "completedTodos"].contains(&task_type) {
+        Err(AppError::ServiceError(format!(
+            "Undefined task type: {task_type}"
+        )))?;
+    }
     let path = get_json_path()?;
     let data = fs::read_to_string(path)?;
 
