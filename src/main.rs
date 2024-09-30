@@ -27,6 +27,14 @@ fn main() -> Result<(), AppError> {
 
     load_env()?;
 
+    // Override POSTGRES_URL if we're running a dev build
+    if cfg!(debug_assertions) {
+        env::set_var(
+            "POSTGRES_URL",
+            "postgresql://postgres:@localhost:5432/habitui_dev",
+        )
+    }
+
     service::run_operation(operation)?;
 
     Ok(())

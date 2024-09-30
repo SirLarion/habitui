@@ -36,4 +36,10 @@ pub enum AppError {
 
     #[error("running operation for service failed: {0}")]
     ServiceError(String),
+
+    #[error(transparent)]
+    PgError(#[from] sqlx::error::Error),
+
+    #[error(transparent)]
+    MigrationError(#[from] sqlx::migrate::MigrateError),
 }

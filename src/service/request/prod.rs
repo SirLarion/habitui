@@ -1,10 +1,11 @@
 use reqwest as req;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
+use sqlx::types::uuid::Uuid;
 
 use crate::{
     error::AppError,
     service::{
-        types::{Task, TaskId},
+        types::Task,
         util::{get_env_vars, SingleRes},
     },
 };
@@ -12,7 +13,7 @@ use crate::{
 const HABITICA_API_ENDPOINT: &str = "https://habitica.com/api/v3";
 
 fn get_headers() -> Result<HeaderMap, AppError> {
-    let (id, token, xclient) = get_env_vars()?;
+    let (id, token, xclient, _) = get_env_vars()?;
 
     let mut headers = HeaderMap::new();
     headers.insert("x-api-user", HeaderValue::from_str(id.as_str())?);
@@ -54,7 +55,7 @@ pub async fn edit_task(task: &Task) -> Result<Task, AppError> {
     Ok(created.data)
 }
 
-pub async fn remove_task(task_id: TaskId) -> Result<Task, AppError> {
+pub async fn remove_task(task_id: Uuid) -> Result<Task, AppError> {
     let client = req::Client::new();
     let headers = get_headers()?;
     let res = client
@@ -68,7 +69,7 @@ pub async fn remove_task(task_id: TaskId) -> Result<Task, AppError> {
     Ok(removed.data)
 }
 
-pub async fn complete_task(task_id: TaskId) -> Result<(), AppError> {
+pub async fn complete_task(task_id: Uuid) -> Result<(), AppError> {
     let client = req::Client::new();
     let headers = get_headers()?;
 
@@ -85,7 +86,7 @@ pub async fn complete_task(task_id: TaskId) -> Result<(), AppError> {
     Ok(())
 }
 
-pub async fn reorder_task(task_id: TaskId, index: usize) -> Result<(), AppError> {
+pub async fn reorder_task(task_id: Uuid, index: usize) -> Result<(), AppError> {
     let client = req::Client::new();
     let headers = get_headers()?;
 

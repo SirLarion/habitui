@@ -29,8 +29,10 @@ pub fn init(flags: LoggerFlags) -> Result<(), SetLoggerError> {
         LoggerFlags { debug: true, .. } => Logger {
             level: Level::Debug,
         },
-        LoggerFlags { verbose: true, .. } => Logger { level: Level::Warn },
-        _ => Logger { level: Level::Info },
+        LoggerFlags { verbose: true, .. } => Logger { level: Level::Info },
+        _ => Logger {
+            level: Level::Error,
+        },
     };
     log::set_boxed_logger(Box::new(logger)).map(|()| log::set_max_level(LevelFilter::Debug))
 }

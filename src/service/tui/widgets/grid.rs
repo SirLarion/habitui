@@ -4,6 +4,8 @@ use std::{
     mem,
 };
 
+use sqlx::types::uuid::Uuid;
+
 use crossterm::event::KeyEvent;
 use ratatui::{
     buffer::Buffer,
@@ -14,7 +16,7 @@ use ratatui::{
 
 use crate::service::{
     tui::util::{Direction, Palette, MOD_KEY_TTL},
-    types::{Action, SubTask, Task, TaskId},
+    types::{Action, SubTask, Task},
 };
 
 const GRID_WIDTH: usize = 3;
@@ -29,7 +31,7 @@ pub struct TaskGridState {
     pub selected_sub: Option<usize>,
     pub task_items: Vec<Task>,
     pub loading: bool,
-    pub modifications: HashMap<TaskId, Diff>,
+    pub modifications: HashMap<Uuid, Diff>,
     pub mod_key: Option<(KeyEvent, u32)>,
 }
 
@@ -209,7 +211,7 @@ impl TaskGridState {
         }
     }
 
-    fn upsert_modified(&mut self, id: TaskId, modification: Action) {
+    fn upsert_modified(&mut self, id: Uuid, modification: Action) {
         if let Some(diff) = self.modifications.get_mut(&id) {
             // Allow only one destructive modification
             if modification.is_destructive() {

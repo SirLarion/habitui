@@ -9,6 +9,20 @@ mod util;
 
 use util::*;
 
+async fn run_async(operation: Option<Operation>) -> Result<(), AppError> {
+    run_migrations().await?;
+
+    match operation {
+        Some(Operation::List { save_json }) => list_tasks(save_json).await?,
+        Some(Operation::Task { descriptor }) => create_task(descriptor).await?,
+        Some(Operation::Reorder) => priority_reorder_tasks().await?,
+        Some(Operation::History) => get_completed_tasks().await?,
+        None => tui::run().await?,
+    };
+
+    Ok(())
+}
+
 pub fn run_operation(operation: Option<Operation>) -> Result<(), AppError> {
     assert_service_installed()?;
 
@@ -19,13 +33,7 @@ pub fn run_operation(operation: Option<Operation>) -> Result<(), AppError> {
         .build()
         .unwrap();
 
-    let handle = match operation {
-        Some(Operation::List { save_json }) => runtime.spawn(list_tasks(save_json)),
-        Some(Operation::Task { descriptor }) => runtime.spawn(create_task(descriptor)),
-        Some(Operation::Reorder) => runtime.spawn(priority_reorder_tasks()),
-        Some(Operation::History) => runtime.spawn(get_completed_tasks()),
-        None => runtime.spawn(tui::run()),
-    };
+    let handle = runtime.spawn(run_async(operation));
 
     runtime.block_on(handle)??;
     Ok(())

@@ -1,12 +1,15 @@
-use serde_json;
 use std::fs::{self, File};
 use std::io::Write;
+
+use serde_json;
+use sqlx::types::uuid::Uuid;
 use tokio::time::{sleep, Duration};
 
+use crate::util::build_config_path;
 use crate::{
     error::AppError,
     service::{
-        types::{Task, TaskId},
+        types::Task,
         util::{get_json_path, ArrayRes},
     },
 };
@@ -46,7 +49,7 @@ pub async fn edit_task(task: &Task) -> Result<&Task, AppError> {
     Ok(task)
 }
 
-pub async fn remove_task(task_id: TaskId) -> Result<Task, AppError> {
+pub async fn remove_task(task_id: Uuid) -> Result<Task, AppError> {
     let path = get_json_path()?;
     let data = fs::read_to_string(&path)?;
     let mut tasks = serde_json::from_str::<ArrayRes<Task>>(data.as_str())?.data;
@@ -66,12 +69,12 @@ pub async fn remove_task(task_id: TaskId) -> Result<Task, AppError> {
     Ok(task)
 }
 
-pub async fn complete_task(task_id: TaskId) -> Result<(), AppError> {
+pub async fn complete_task(task_id: Uuid) -> Result<(), AppError> {
     remove_task(task_id).await?;
     Ok(())
 }
 
-pub async fn reorder_task(task_id: TaskId, index: usize) -> Result<(), AppError> {
+pub async fn reorder_task(task_id: Uuid, index: usize) -> Result<(), AppError> {
     let path = get_json_path()?;
     let data = fs::read_to_string(&path)?;
     let mut tasks = serde_json::from_str::<ArrayRes<Task>>(data.as_str())?.data;
@@ -97,8 +100,16 @@ pub async fn fetch_tasks(task_type: &str) -> Result<String, AppError> {
             "Undefined task type: {task_type}"
         )))?;
     }
-    let path = get_json_path()?;
-    let data = fs::read_to_string(path)?;
+    let path = build_config_path()?;
+    let dir = match task_type {
+        "todos" => format!("{path}/habitica_tasks.json"),
+        "completedTodos" => format!("{path}/habitica_completed.json"),
+        _ => Err(AppError::ServiceError(format!(
+            "No matching local JSON for task_type: {task_type}"
+        )))?,
+    };
+
+    let data = fs::read_to_string(dir)?;
 
     // Artificial delay
     sleep(Duration::from_millis(500)).await;

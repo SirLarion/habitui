@@ -5,11 +5,12 @@ use std::io::Write;
 use inquire::{max_length, min_length, DateSelect, Select, Text};
 use log::debug;
 use serde::{Deserialize, Serialize};
+use sqlx::{types::uuid::Uuid, PgPool, Postgres};
 use time::{format_description::well_known::Iso8601, OffsetDateTime};
 
 use super::{
     request::{fetch_tasks, post_created_task, reorder_task},
-    types::{Difficulty, Priority, SubTask, Task, TaskId},
+    types::{Difficulty, Priority, SubTask, Task},
 };
 use crate::{error::AppError, util::build_config_path};
 
@@ -29,17 +30,30 @@ pub fn get_json_path() -> Result<String, AppError> {
     Ok(format!("{dir}/habitica_tasks.json"))
 }
 
-pub fn get_env_vars() -> Result<(String, String, String), AppError> {
+pub fn get_env_vars() -> Result<(String, String, String, String), AppError> {
     Ok((
         env::var("HABITICA_USER_ID")?,
         env::var("HABITICA_TOKEN")?,
         env::var("HABITICA_XCLIENT")?,
+        env::var("POSTGRES_URL")?,
     ))
 }
 
 pub fn assert_service_installed() -> Result<(), AppError> {
     // Test that env was loaded correctly
     get_env_vars()?;
+
+    Ok(())
+}
+
+pub async fn create_pg_pool() -> Result<PgPool, AppError> {
+    let pool = PgPool::connect(&env::var("POSTGRES_URL")?).await?;
+    Ok(pool)
+}
+
+pub async fn run_migrations() -> Result<(), AppError> {
+    let pool = create_pg_pool().await?;
+    sqlx::migrate!().run(&pool).await?;
 
     Ok(())
 }
@@ -68,12 +82,13 @@ fn parse_task_descriptor(descriptor: String) -> Result<Task, AppError> {
     match parts {
         (Some(text), Some(difficulty), notes, date, check) => {
             return Ok(Task {
-                id: TaskId::empty(),
+                id: Uuid::nil(),
                 text: text.into(),
                 task_type: "todo".into(),
                 difficulty: parse_difficulty(difficulty)?,
                 notes: notes.map(|n| n.into()),
                 date: date.map(|d| OffsetDateTime::parse(d.into(), &ISO8601).unwrap()),
+                completed_at: None,
                 checklist: check.map(|c| {
                     c.split(";")
                         .map(|i| SubTask {
@@ -153,14 +168,36 @@ fn prompt_for_task() -> Result<Task, AppError> {
     let checklist = prompt_for_checklist()?;
 
     Ok(Task {
-        id: TaskId::empty(),
+        id: Uuid::nil(),
         text: name,
         task_type: "todo".into(),
         difficulty,
         notes: if notes.is_empty() { None } else { Some(notes) },
         date,
+        completed_at: None,
         checklist,
     })
+}
+
+async fn query_completed_tasks() -> Result<Vec<Task>, AppError> {
+    let pool = create_pg_pool().await?;
+    let tasks = sqlx::query_as::<_, Task>(
+        "SELECT
+            id,
+            text,
+            task_type,
+            difficulty,
+            notes,
+            date,
+            completed_at,
+            checklist 
+        FROM completed_task;
+        ",
+    )
+    .fetch_all(&pool)
+    .await?;
+
+    Ok(tasks)
 }
 
 pub async fn create_task(descriptor: Option<String>) -> Result<(), AppError> {
@@ -206,14 +243,39 @@ pub async fn get_completed_tasks() -> Result<(), AppError> {
     let raw_tasks = fetch_tasks("completedTodos").await?;
     let tasks = serde_json::from_str::<ArrayRes<Task>>(raw_tasks.as_str())?.data;
 
+    let pool = PgPool::connect(&env::var("POSTGRES_URL")?).await?;
+
     for task in tasks {
-        println!("{task}");
+        sqlx::query::<Postgres>(
+            "
+            INSERT INTO completed_task (
+                id,
+                text,
+                task_type,
+                difficulty,
+                notes,
+                date,
+                completed_at,
+                checklist
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT(id) DO NOTHING;
+            ",
+        )
+        .bind(task.id)
+        .bind(task.text)
+        .bind(task.task_type)
+        .bind(task.difficulty)
+        .bind(task.notes)
+        .bind(task.date)
+        .bind(task.completed_at)
+        .bind(task.checklist)
+        .execute(&pool)
+        .await?;
     }
 
-    let dir = build_config_path()?;
-    let mut file = File::create(format!("{dir}/habitica_completed.json"))?;
-    file.write_all(raw_tasks.as_bytes())?;
-    println!("\nSaved list to ~/.config/habitica_completed.json");
+    for task in query_completed_tasks().await? {
+        println!("{task}");
+    }
 
     Ok(())
 }

@@ -5,10 +5,14 @@ use serde::{
     de::{self, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
 };
+use sqlx::{
+    prelude::{FromRow, Type},
+    types::{time::OffsetDateTime, uuid::Uuid},
+};
+use time::format_description::well_known::Iso8601;
 use time::Duration;
-use time::{format_description::well_known::Iso8601, OffsetDateTime};
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone, Type)]
 pub enum Difficulty {
     TRIVIAL,
     EASY,
@@ -132,39 +136,20 @@ impl<'de> Deserialize<'de> for Difficulty {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq, Eq, Hash)]
-pub struct TaskId(String);
-
-impl fmt::Display for TaskId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl TaskId {
-    pub fn empty() -> Self {
-        Self("".into())
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-}
-
-fn skip_serialize_in_prod(_id: &TaskId) -> bool {
+fn skip_serialize_in_prod(_id: &Uuid) -> bool {
     cfg!(not(debug_assertions))
 }
 
-#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq, Type)]
 pub struct SubTask {
     pub text: String,
     pub completed: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, FromRow, Type)]
 pub struct Task {
     #[serde(rename = "_id", skip_serializing_if = "skip_serialize_in_prod")]
-    pub id: TaskId,
+    pub id: Uuid,
     pub text: String,
     #[serde(rename = "type")]
     pub task_type: String,
@@ -177,18 +162,26 @@ pub struct Task {
         serialize_with = "time::serde::iso8601::option::serialize"
     )]
     pub date: Option<OffsetDateTime>,
+    #[serde(
+        rename = "dateCompleted",
+        default,
+        deserialize_with = "time::serde::iso8601::option::deserialize",
+        serialize_with = "time::serde::iso8601::option::serialize"
+    )]
+    pub completed_at: Option<OffsetDateTime>,
     pub checklist: Option<Vec<SubTask>>,
 }
 
 impl Default for Task {
     fn default() -> Self {
         Self {
-            id: TaskId::empty(),
+            id: Uuid::nil(),
             text: "".into(),
             notes: None,
             task_type: "todo".into(),
             difficulty: Difficulty::EASY,
             date: None,
+            completed_at: None,
             checklist: None,
         }
     }
